@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Toán Vui Nhộn</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+    .config, .game, .result {
+      margin-top: 20px;
+    }
+    input[type="number"] {
+      width: 50px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+    }
+    .countdown {
+      width: 300px;
+      height: 20px;
+      margin: 0 auto 20px;
+      background: #555;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .countdown-inner {
+      height: 100%;
+      background: #ffcc00;
+      width: 100%;
+      transition: width 1s linear;
+    }
+    .question {
+      font-size: 32px;
+      margin: 20px 0;
+    }
+    .highscore {
+      color: #0f0;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🧠 Toán Vui Nhộn</h1>
+
+<div class="config">
+  <h3>Chọn cấu hình:</h3>
+  <label><input type="checkbox" value="+"> Cộng</label>
+  <label><input type="checkbox" value="-"> Trừ</label>
+  <label><input type="checkbox" value="*"> Nhân</label>
+  <label><input type="checkbox" value="/"> Chia</label>
+  <br><br>
+  <label>Số chữ số: <input type="number" id="digitCount" min="1" max="5" value="1"></label>
+  <br><br>
+  <label>Mức độ:
+    <select id="difficulty">
+      <option value="easy">Dễ (10s)</option>
+      <option value="medium">Trung bình (7s)</option>
+      <option value="hard">Khó (5s)</option>
+    </select>
+  </label>
+  <br><br>
+  <button onclick="startGame()">🎮 Bắt đầu chơi</button>
+</div>
+
+<div class="game" style="display:none">
+  <div class="countdown"><div class="countdown-inner" id="progressBar"></div></div>
+  <div class="question" id="questionText"></div>
+  <input type="number" id="answer" placeholder="Nhập đáp án" />
+  <br>
+  <button onclick="submitAnswer()">✅ Trả lời</button>
+</div>
+
+<div class="result" style="display:none">
+  <h2>Kết thúc trò chơi!</h2>
+  <p>Điểm của bạn: <span id="scoreText"></span></p>
+  <p>Điểm cao nhất: <span class="highscore" id="highScoreText"></span></p>
+  <button onclick="location.reload()">🔁 Chơi lại</button>
+</div>
+
+<audio id="soundCorrect" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+
+<script>
+  let currentScore = 0, countdown, timeLeft;
+  let correctAnswer = 0;
+  let configKey = "";
+  let selectedOperators = [];
+
+  function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function saveConfig(ops, digits, difficulty) {
+    localStorage.setItem('mathfun_config', JSON.stringify({ ops, digits, difficulty }));
+  }
+
+  function loadConfig() {
+    const saved = JSON.parse(localStorage.getItem('mathfun_config'));
+    if (!saved) return;
+  
+    document.getElementById('digitCount').value = saved.digits;
+    document.getElementById('difficulty').value = saved.difficulty;
+  
+    document.querySelectorAll('.config input[type="checkbox"]').forEach(cb => {
+      cb.checked = Array.isArray(saved.ops) && saved.ops.includes(cb.value);
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', loadConfig);
+
+
+  function startGame() {
+    selectedOperators = [...document.querySelectorAll('.config input[type="checkbox"]')].filter(c => c.checked).map(c => c.value);
+    const digitCount = parseInt(document.getElementById('digitCount').value);
+    const difficulty = document.getElementById('difficulty').value;
+
+    if (selectedOperators.length === 0) {
+      alert("Chọn ít nhất một phép toán!");
+      return;
+    }
+
+    saveConfig(selectedOperators, digitCount, difficulty);
+    configKey = `${difficulty}_${digitCount}_${selectedOperators.sort().join('')}`;
+
+    document.querySelector('.config').style.display = 'none';
+    document.querySelector('.game').style.display = 'block';
+    currentScore = 0;
+
+    nextQuestion(digitCount, difficulty);
+  }
+
+  function updateProgressBar(percent) {
+    document.getElementById('progressBar').style.width = `${percent}%`;
+  }
+
+  function nextQuestion(digitCount, difficulty) {
+    let op = selectedOperators[getRandomInt(0, selectedOperators.length - 1)];
+    let max = Math.pow(10, digitCount) - 1;
+    let a = getRandomInt(1, max);
+    let b = getRandomInt(1, max);
+
+    if (op === '-') {
+      if (a < b) [a, b] = [b, a];
+    } else if (op === '/') {
+      b = getRandomInt(1, max);
+      a = b * getRandomInt(1, Math.floor(max / b));
+    }
+
+    correctAnswer = eval(`${a}${op}${b}`);
+    document.getElementById('questionText').innerText = `${a} ${op} ${b} = ?`;
+    document.getElementById('answer').value = "";
+    document.getElementById('answer').focus();
+
+    clearInterval(countdown);
+    const timeMap = { easy: 10, medium: 7, hard: 5 };
+    const totalTime = timeMap[difficulty];
+    timeLeft = totalTime;
+    updateProgressBar(100);
+
+    countdown = setInterval(() => {
+      timeLeft--;
+      updateProgressBar((timeLeft / totalTime) * 100);
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  }
+
+  function submitAnswer() {
+    const userAns = parseFloat(document.getElementById('answer').value);
+    if (Math.abs(userAns - correctAnswer) < 0.0001) {
+      document.getElementById('soundCorrect').play();
+      currentScore++;
+      clearInterval(countdown);
+      const digitCount = parseInt(document.getElementById('digitCount').value);
+      const difficulty = document.getElementById('difficulty').value;
+      nextQuestion(digitCount, difficulty);
+    } else {
+      document.getElementById('soundWrong').play();
+      endGame();
+    }
+  }
+
+  function endGame() {
+    clearInterval(countdown);
+    document.querySelector('.game').style.display = 'none';
+    document.querySelector('.result').style.display = 'block';
+
+    document.getElementById('scoreText').innerText = currentScore;
+    const highScoreKey = `mathfun_highscore_${configKey}`;
+    const prevHigh = parseInt(localStorage.getItem(highScoreKey)) || 0;
+
+    if (currentScore > prevHigh) {
+      localStorage.setItem(highScoreKey, currentScore);
+    }
+
+    document.getElementById('highScoreText').innerText = Math.max(currentScore, prevHigh);
+  }
+</script>
+
+</body>
+</html>
