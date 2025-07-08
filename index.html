@@ -1,207 +1,533 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Toán Vui Nhộn</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #222;
-      color: #fff;
-      text-align: center;
-      padding: 20px;
-    }
-    .config, .game, .result {
-      margin-top: 20px;
-    }
-    input[type="number"] {
-      width: 50px;
-    }
-    button {
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 16px;
-    }
-    .countdown {
-      width: 300px;
-      height: 20px;
-      margin: 0 auto 20px;
-      background: #555;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .countdown-inner {
-      height: 100%;
-      background: #ffcc00;
-      width: 100%;
-      transition: width 1s linear;
-    }
-    .question {
-      font-size: 32px;
-      margin: 20px 0;
-    }
-    .highscore {
-      color: #0f0;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fun Math</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Comic+Sans+MS&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Comic Sans MS', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #ff8a80, #90caf9);
+            margin: 0;
+            padding: 20px;
+            user-select: none;
+            touch-action: manipulation;
+            color: #333;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: '+ × ÷';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            font-size: 50px;
+            color: #fff;
+            background: repeating-linear-gradient(45deg, transparent, transparent 50px, rgba(255,255,255,0.1) 50px, rgba(255,255,255,0.1) 100px);
+            pointer-events: none;
+        }
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            color: #ffd700;
+            font-size: 2em;
+            text-shadow: 3px 3px 0 #ff6f61;
+            margin-bottom: 20px;
+        }
+        .config, .game, .result {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3), 0 0 10px #ffd700;
+            margin: 15px;
+            width: 90%;
+            max-width: 600px;
+        }
+        select, input[type="number"] {
+            padding: 15px;
+            font-size: 1.2em;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: 2px solid #ff6f61;
+            width: 100%;
+            box-sizing: border-box;
+            background: #f0f4f8;
+        }
+        button {
+            padding: 15px;
+            font-size: 1.2em;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(#00ff00, #00cc00);
+            color: #fff;
+            cursor: pointer;
+            font-weight: bold;
+            text-shadow: 1px 1px #333;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px #00ff00;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        .operation-button {
+            background: linear-gradient(#ccc, #aaa);
+            color: #333;
+            position: relative;
+        }
+        .operation-button.active {
+            background: linear-gradient(#00ff00, #00cc00);
+            color: #fff;
+        }
+        .operation-button.active::after {
+            content: '✔';
+            position: absolute;
+            right: 10px;
+            font-size: 1.2em;
+        }
+        #answerInput {
+            text-align: center;
+            background: #f0f4f8;
+            font-size: 1.5em;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #ff6f61;
+        }
+        #answerInput:focus {
+            box-shadow: 0 0 10px #ff6f61;
+        }
+        #question, #feedbackDisplay {
+            text-align: center;
+            font-size: 1.3em;
+        }
+        #highScoreDisplay, #powerUpDisplay, #feedbackDisplay, #historyDisplay {
+            margin: 15px 0;
+            font-size: 1.1em;
+            color: #333;
+        }
+        #historyDisplay {
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #ff6f61;
+        }
+        #historyDisplay ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #historyDisplay li {
+            padding: 5px 0;
+            border-bottom: 1px solid #ccc;
+            font-size: 0.9em;
+        }
+        #progressBar {
+            height: 12px;
+            background: linear-gradient(90deg, #ff6f61, #ffd700);
+            width: 100%;
+            border-radius: 6px;
+            transition: width 0.1s linear;
+            display: none;
+            box-shadow: 0 0 5px #ffd700;
+        }
+        #scoreDisplay, #levelDisplay {
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            color: #ff6f61;
+            text-shadow: 1px 1px #fff;
+        }
+        .score-increase, .level-up {
+            animation: bounce 0.6s;
+        }
+        .wrong-answer {
+            animation: shake 0.4s;
+            background-color: #ff9999;
+        }
+        .keyboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 15px;
+            width: 100%;
+            max-width: 300px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .keyboard button {
+            padding: 15px;
+            font-size: 1.5em;
+            background: linear-gradient(#00cc00, #009900);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .keyboard button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 8px #00ff00;
+        }
+        .keyboard button:active {
+            transform: scale(0.9);
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 1.5em; }
+            .config, .game, .result { padding: 15px; }
+            select, input[type="number"], button { font-size: 1em; padding: 10px; }
+            #answerInput { font-size: 1.2em; padding: 15px; }
+            .keyboard button { font-size: 1.2em; padding: 10px; }
+            #question, #feedbackDisplay { font-size: 1.1em; }
+        }
+        @media (min-width: 601px) and (max-width: 1024px) {
+            h1 { font-size: 1.8em; }
+            .config, .game, .result { padding: 20px; }
+            select, input[type="number"], button { font-size: 1.1em; }
+            #answerInput { font-size: 1.3em; }
+            .keyboard button { font-size: 1.3em; }
+        }
+    </style>
 </head>
 <body>
+    <h1>🧠 Fun Math</h1>
+    <div class="config" id="configScreen">
+        <label>Select operations:</label><br>
+        <button class="operation-button active" data-value="add" onclick="toggleOperation('add')">Addition</button><br>
+        <button class="operation-button" data-value="subtract" onclick="toggleOperation('subtract')">Subtraction</button><br>
+        <button class="operation-button" data-value="multiply" onclick="toggleOperation('multiply')">Multiplication</button><br>
+        <button class="operation-button" data-value="divide" onclick="toggleOperation('divide')">Division</button><br>
+        <label>Number of digits:</label>
+        <input type="number" id="digits" min="1" max="3" value="1"><br>
+        <label>Difficulty:</label><br>
+        <select id="difficulty">
+            <option value="10">Easy (10s)</option>
+            <option value="7">Medium (7s)</option>
+            <option value="5">Hard (5s)</option>
+        </select><br>
+        <label><input type="checkbox" id="practiceMode"> Practice Mode</label><br>
+        <label><input type="checkbox" id="muteSounds"> Mute Sounds</label><br>
+        <div id="highScoreDisplay">High Score: 0</div>
+        <div id="historyDisplay"><strong>Game History:</strong><ul></ul></div>
+        <button id="startButton">🎮 Start Game</button>
+    </div>
+    <div class="game" id="gameScreen" style="display: none;">
+        <div id="scoreDisplay">Score: 0</div>
+        <div id="levelDisplay">Level: 1</div>
+        <div id="powerUpDisplay">No Power-Ups</div>
+        <div id="question"></div>
+        <div id="progressBar"></div>
+        <input type="number" id="answerInput" placeholder="Enter answer" ontouchstart="this.focus()">
+        <div class="keyboard" id="virtualKeyboard">
+            <button onclick="appendToInput('1')">1</button>
+            <button onclick="appendToInput('2')">2</button>
+            <button onclick="appendToInput('3')">3</button>
+            <button onclick="appendToInput('4')">4</button>
+            <button onclick="appendToInput('5')">5</button>
+            <button onclick="appendToInput('6')">6</button>
+            <button onclick="appendToInput('7')">7</button>
+            <button onclick="appendToInput('8')">8</button>
+            <button onclick="appendToInput('9')">9</button>
+            <button onclick="appendToInput('0')">0</button>
+            <button onclick="appendToInput('-')">-</button>
+            <button onclick="clearInput()">Clear</button>
+        </div>
+        <button id="submitButton">✅ Submit</button>
+        <button id="backButton" style="display: none;">🔙 Back to Menu</button>
+    </div>
+    <div class="result" id="resultScreen" style="display: none;">
+        <h2>Game Over!</h2>
+        <p>Your Score: <span id="score"></span></p>
+        <p>High Score: <span id="highScore"></span></p>
+        <div id="feedbackDisplay"></div>
+        <button id="replayButton">🔁 Play Again</button>
+    </div>
+    <audio id="correctSound" src="https://cdn.freesound.org/previews/335/335908_5865517-lq.mp3" preload="auto"></audio>
+    <audio id="wrongSound" src="https://cdn.freesound.org/previews/131/131657_2398403-lq.mp3" preload="auto"></audio>
+    <audio id="levelUpSound" src="https://cdn.freesound.org/previews/588/588251_10029869-lq.mp3" preload="auto"></audio>
 
-<h1>🧠 Toán Vui Nhộn</h1>
+    <script>
+        let score = 0, level = 1, streak = 0, powerUps = { extraTime: 0, multiplier: 1 };
+        let highScores = JSON.parse(localStorage.getItem('highScores')) || {};
+        let history = JSON.parse(localStorage.getItem('gameHistory')) || [];
+        let selectedOperations = ['add'], timeLeft, totalTime, timer, isMuted = false, practiceMode = false;
+        let lastQuestion = '', lastCorrectAnswer = 0, lastReason = '';
+        let maxDigits = 1;
 
-<div class="config">
-  <h3>Chọn cấu hình:</h3>
-  <label><input type="checkbox" value="+"> Cộng</label>
-  <label><input type="checkbox" value="-"> Trừ</label>
-  <label><input type="checkbox" value="*"> Nhân</label>
-  <label><input type="checkbox" value="/"> Chia</label>
-  <br><br>
-  <label>Số chữ số: <input type="number" id="digitCount" min="1" max="5" value="1"></label>
-  <br><br>
-  <label>Mức độ:
-    <select id="difficulty">
-      <option value="easy">Dễ (10s)</option>
-      <option value="medium">Trung bình (7s)</option>
-      <option value="hard">Khó (5s)</option>
-    </select>
-  </label>
-  <br><br>
-  <button onclick="startGame()">🎮 Bắt đầu chơi</button>
-</div>
+        // Detect touch device and set readonly for answerInput
+        const isTouchDevice = navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+        const answerInput = document.getElementById('answerInput');
+        if (isTouchDevice) {
+            answerInput.setAttribute('readonly', 'readonly');
+        }
 
-<div class="game" style="display:none">
-  <div class="countdown"><div class="countdown-inner" id="progressBar"></div></div>
-  <div class="question" id="questionText"></div>
-  <input type="number" id="answer" placeholder="Nhập đáp án" />
-  <br>
-  <button onclick="submitAnswer()">✅ Trả lời</button>
-</div>
+        function updateHighScoreDisplay() {
+            const key = getConfigKey();
+            document.getElementById('highScoreDisplay').textContent = `High Score: ${highScores[key] || 0}`;
+            const historyList = document.querySelector('#historyDisplay ul');
+            historyList.innerHTML = '';
+            history.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort latest first
+            history.forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = `${entry.date} | Score: ${entry.score} | ${entry.mode} | Ops: ${entry.operations} | Digits: ${entry.digits} | Diff: ${entry.difficulty}`;
+                historyList.appendChild(li);
+            });
+        }
 
-<div class="result" style="display:none">
-  <h2>Kết thúc trò chơi!</h2>
-  <p>Điểm của bạn: <span id="scoreText"></span></p>
-  <p>Điểm cao nhất: <span class="highscore" id="highScoreText"></span></p>
-  <button onclick="location.reload()">🔁 Chơi lại</button>
-</div>
+        function getConfigKey() {
+            const operations = selectedOperations.sort().join('_');
+            const digits = document.getElementById('digits').value;
+            const difficulty = practiceMode ? 'practice' : document.getElementById('difficulty').value;
+            return `${operations}_${digits}_${difficulty}`;
+        }
 
-<audio id="soundCorrect" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-<audio id="soundWrong" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+        function saveHistory(score, config) {
+            const operations = selectedOperations.sort();
+            const digits = document.getElementById('digits').value;
+            const difficulty = practiceMode ? 'Practice' : document.getElementById('difficulty').options[document.getElementById('difficulty').selectedIndex].text;
+            const entry = {
+                date: new Date().toISOString(), // Store as ISO for sorting
+                displayDate: new Date().toLocaleString('en-US', { timeZone: 'UTC' }), // Display in UTC
+                score,
+                operations: operations.join(', '),
+                digits,
+                difficulty,
+                mode: practiceMode ? 'Practice' : 'Survival'
+            };
+            history.push(entry);
+            localStorage.setItem('gameHistory', JSON.stringify(history));
+        }
 
-<script>
-  let currentScore = 0, countdown, timeLeft;
-  let correctAnswer = 0;
-  let configKey = "";
-  let selectedOperators = [];
+        function toggleOperation(value) {
+            const button = document.querySelector(`.operation-button[data-value="${value}"]`);
+            if (button.classList.contains('active')) {
+                button.classList.remove('active');
+                selectedOperations = selectedOperations.filter(op => op !== value);
+            } else {
+                button.classList.add('active');
+                selectedOperations.push(value);
+            }
+            updateHighScoreDisplay();
+        }
 
-  function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
+        function appendToInput(value) {
+            const input = document.getElementById('answerInput');
+            input.value += value;
+            input.focus();
+        }
 
-  function saveConfig(ops, digits, difficulty) {
-    localStorage.setItem('mathfun_config', JSON.stringify({ ops, digits, difficulty }));
-  }
+        function clearInput() {
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerInput').focus();
+        }
 
-  function loadConfig() {
-    const saved = JSON.parse(localStorage.getItem('mathfun_config'));
-    if (!saved) return;
-  
-    document.getElementById('digitCount').value = saved.digits;
-    document.getElementById('difficulty').value = saved.difficulty;
-  
-    document.querySelectorAll('.config input[type="checkbox"]').forEach(cb => {
-      cb.checked = Array.isArray(saved.ops) && saved.ops.includes(cb.value);
-    });
-  }
+        function playSound(audioId) {
+            if (!isMuted) {
+                const audio = document.getElementById(audioId);
+                if (audio && audio.src) {
+                    audio.play().catch(error => {
+                        console.error(`Error playing ${audioId}:`, error);
+                    });
+                } else {
+                    console.warn(`Audio element ${audioId} not found or has no valid source`);
+                }
+            }
+        }
 
-  document.addEventListener('DOMContentLoaded', loadConfig);
+        document.getElementById('digits').addEventListener('input', () => {
+            const digits = document.getElementById('digits');
+            if (digits.value < 1 || digits.value > 3 || isNaN(digits.value)) digits.value = 1;
+            updateHighScoreDisplay();
+        });
+        document.getElementById('difficulty').addEventListener('change', updateHighScoreDisplay);
+        document.getElementById('practiceMode').addEventListener('change', () => {
+            practiceMode = document.getElementById('practiceMode').checked;
+            document.getElementById('progressBar').style.display = practiceMode ? 'none' : 'block';
+            document.getElementById('backButton').style.display = practiceMode ? 'block' : 'none';
+            updateHighScoreDisplay();
+        });
+        document.getElementById('startButton').addEventListener('click', startGame);
+        document.getElementById('submitButton').addEventListener('click', submitAnswer);
+        document.getElementById('backButton').addEventListener('click', () => {
+            if (practiceMode) {
+                saveHistory(score, getConfigKey());
+            }
+            clearInterval(timer);
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('configScreen').style.display = 'block';
+            updateHighScoreDisplay();
+        });
+        document.getElementById('replayButton').addEventListener('click', () => {
+            document.getElementById('configScreen').style.display = 'block';
+            document.getElementById('resultScreen').style.display = 'none';
+            updateHighScoreDisplay();
+        });
 
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (document.getElementById('configScreen').style.display !== 'none') {
+                    document.getElementById('startButton').click();
+                } else if (document.getElementById('gameScreen').style.display !== 'none') {
+                    document.getElementById('submitButton').click();
+                } else if (document.getElementById('resultScreen').style.display !== 'none') {
+                    document.getElementById('replayButton').click();
+                }
+            } else if (e.key === 'Escape' && practiceMode && document.getElementById('gameScreen').style.display !== 'none') {
+                document.getElementById('backButton').click();
+            }
+        });
 
-  function startGame() {
-    selectedOperators = [...document.querySelectorAll('.config input[type="checkbox"]')].filter(c => c.checked).map(c => c.value);
-    const digitCount = parseInt(document.getElementById('digitCount').value);
-    const difficulty = document.getElementById('difficulty').value;
+        function startGame() {
+            if (selectedOperations.length === 0) {
+                alert('Please select at least one operation!');
+                return;
+            }
+            isMuted = document.getElementById('muteSounds').checked;
+            practiceMode = document.getElementById('practiceMode').checked;
+            score = 0;
+            level = 1;
+            streak = 0;
+            maxDigits = parseInt(document.getElementById('digits').value);
+            powerUps = { extraTime: 0, multiplier: 1 };
+            document.getElementById('configScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerInput').focus();
+            document.getElementById('scoreDisplay').textContent = 'Score: 0';
+            document.getElementById('levelDisplay').textContent = 'Level: 1';
+            document.getElementById('powerUpDisplay').textContent = 'No Power-Ups';
+            document.getElementById('progressBar').style.display = practiceMode ? 'none' : 'block';
+            document.getElementById('backButton').style.display = practiceMode ? 'block' : 'none';
+            nextQuestion();
+        }
 
-    if (selectedOperators.length === 0) {
-      alert("Chọn ít nhất một phép toán!");
-      return;
-    }
+        function nextQuestion() {
+            maxDigits = Math.max(maxDigits, Math.min(parseInt(document.getElementById('digits').value) + Math.floor(level / 5), 3));
+            totalTime = practiceMode ? Infinity : parseInt(document.getElementById('difficulty').value) + powerUps.extraTime;
+            timeLeft = totalTime;
+            document.getElementById('progressBar').style.width = '100%';
+            const operation = selectedOperations[Math.floor(Math.random() * selectedOperations.length)];
+            let a, b, question, answer;
+            switch (operation) {
+                case 'add':
+                    a = Math.floor(Math.random() * Math.pow(10, maxDigits));
+                    b = Math.floor(Math.random() * Math.pow(10, maxDigits));
+                    question = `${a} + ${b} = ?`;
+                    answer = a + b;
+                    break;
+                case 'subtract':
+                    a = Math.floor(Math.random() * Math.pow(10, maxDigits));
+                    b = Math.floor(Math.random() * Math.pow(10, maxDigits));
+                    if (b > a) [a, b] = [b, a];
+                    question = `${a} - ${b} = ?`;
+                    answer = a - b;
+                    break;
+                case 'multiply':
+                    a = Math.floor(Math.random() * Math.pow(10, maxDigits));
+                    b = Math.floor(Math.random() * Math.pow(10, maxDigits));
+                    question = `${a} × ${b} = ?`;
+                    answer = a * b;
+                    break;
+                case 'divide':
+                    b = Math.floor(Math.random() * Math.pow(10, maxDigits)) + 1;
+                    a = b * Math.floor(Math.random() * Math.pow(10, maxDigits));
+                    question = `${a} ÷ ${b} = ?`;
+                    answer = a / b;
+                    break;
+            }
+            lastQuestion = question;
+            lastCorrectAnswer = answer;
+            document.getElementById('question').textContent = question;
+            document.getElementById('answerInput').dataset.answer = answer;
+            document.getElementById('answerInput').dataset.startTime = Date.now();
+            clearInterval(timer);
+            if (!practiceMode) {
+                timer = setInterval(() => {
+                    timeLeft -= 0.1;
+                    document.getElementById('progressBar').style.width = (timeLeft / totalTime * 100) + '%';
+                    if (timeLeft <= 0) {
+                        playSound('wrongSound');
+                        lastReason = 'Time’s up!';
+                        endGame();
+                    }
+                }, 100);
+            }
+        }
 
-    saveConfig(selectedOperators, digitCount, difficulty);
-    configKey = `${difficulty}_${digitCount}_${selectedOperators.sort().join('')}`;
+        function submitAnswer() {
+            const userAnswer = document.getElementById('answerInput').value;
+            const correctAnswer = parseFloat(document.getElementById('answerInput').dataset.answer);
+            const timeTaken = (Date.now() - parseFloat(document.getElementById('answerInput').dataset.startTime)) / 1000;
+            if (userAnswer !== '' && !isNaN(parseFloat(userAnswer)) && parseFloat(userAnswer) === correctAnswer) {
+                streak++;
+                let points = powerUps.multiplier * (practiceMode || timeTaken < totalTime / 2 ? 2 : 1);
+                score += points;
+                document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+                document.getElementById('scoreDisplay').classList.add('score-increase');
+                setTimeout(() => document.getElementById('scoreDisplay').classList.remove('score-increase'), 500);
+                playSound('correctSound');
+                if (streak >= 5) {
+                    powerUps.multiplier = 2;
+                    document.getElementById('powerUpDisplay').textContent = practiceMode ? 'Power-Up: 2x Score' : 'Power-Up: 2x Score';
+                }
+                if (streak >= 10 && !practiceMode) {
+                    powerUps.extraTime = 2;
+                    document.getElementById('powerUpDisplay').textContent = 'Power-Up: +2s & 2x Score';
+                }
+                if (score >= level * 10) {
+                    level++;
+                    document.getElementById('levelDisplay').textContent = `Level: ${level}`;
+                    document.getElementById('levelDisplay').classList.add('level-up');
+                    setTimeout(() => document.getElementById('levelDisplay').classList.remove('level-up'), 500);
+                    playSound('levelUpSound');
+                }
+                document.getElementById('answerInput').value = '';
+                nextQuestion();
+            } else {
+                if (practiceMode) {
+                    document.getElementById('answerInput').classList.add('wrong-answer');
+                    setTimeout(() => document.getElementById('answerInput').classList.remove('wrong-answer'), 500);
+                    playSound('wrongSound');
+                    document.getElementById('answerInput').value = '';
+                } else {
+                    streak = 0;
+                    powerUps = { extraTime: 0, multiplier: 1 };
+                    document.getElementById('powerUpDisplay').textContent = 'No Power-Ups';
+                    document.getElementById('answerInput').classList.add('wrong-answer');
+                    setTimeout(() => document.getElementById('answerInput').classList.remove('wrong-answer'), 500);
+                    playSound('wrongSound');
+                    lastReason = userAnswer === '' ? 'No answer submitted!' : `Your answer (${userAnswer}) is incorrect!`;
+                    endGame();
+                }
+            }
+        }
 
-    document.querySelector('.config').style.display = 'none';
-    document.querySelector('.game').style.display = 'block';
-    currentScore = 0;
+        function endGame() {
+            clearInterval(timer);
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('resultScreen').style.display = 'block';
+            document.getElementById('score').textContent = score;
+            const key = getConfigKey();
+            if (!highScores[key] || score > highScores[key]) {
+                highScores[key] = score;
+                localStorage.setItem('highScores', JSON.stringify(highScores));
+            }
+            document.getElementById('highScore').textContent = highScores[key] || 0;
+            document.getElementById('feedbackDisplay').textContent = `Question: ${lastQuestion} | ${lastReason} The correct answer is: ${lastCorrectAnswer}`;
+            saveHistory(score, key);
+        }
 
-    nextQuestion(digitCount, difficulty);
-  }
-
-  function updateProgressBar(percent) {
-    document.getElementById('progressBar').style.width = `${percent}%`;
-  }
-
-  function nextQuestion(digitCount, difficulty) {
-    let op = selectedOperators[getRandomInt(0, selectedOperators.length - 1)];
-    let max = Math.pow(10, digitCount) - 1;
-    let a = getRandomInt(1, max);
-    let b = getRandomInt(1, max);
-
-    if (op === '-') {
-      if (a < b) [a, b] = [b, a];
-    } else if (op === '/') {
-      b = getRandomInt(1, max);
-      a = b * getRandomInt(1, Math.floor(max / b));
-    }
-
-    correctAnswer = eval(`${a}${op}${b}`);
-    document.getElementById('questionText').innerText = `${a} ${op} ${b} = ?`;
-    document.getElementById('answer').value = "";
-    document.getElementById('answer').focus();
-
-    clearInterval(countdown);
-    const timeMap = { easy: 10, medium: 7, hard: 5 };
-    const totalTime = timeMap[difficulty];
-    timeLeft = totalTime;
-    updateProgressBar(100);
-
-    countdown = setInterval(() => {
-      timeLeft--;
-      updateProgressBar((timeLeft / totalTime) * 100);
-      if (timeLeft <= 0) endGame();
-    }, 1000);
-  }
-
-  function submitAnswer() {
-    const userAns = parseFloat(document.getElementById('answer').value);
-    if (Math.abs(userAns - correctAnswer) < 0.0001) {
-      document.getElementById('soundCorrect').play();
-      currentScore++;
-      clearInterval(countdown);
-      const digitCount = parseInt(document.getElementById('digitCount').value);
-      const difficulty = document.getElementById('difficulty').value;
-      nextQuestion(digitCount, difficulty);
-    } else {
-      document.getElementById('soundWrong').play();
-      endGame();
-    }
-  }
-
-  function endGame() {
-    clearInterval(countdown);
-    document.querySelector('.game').style.display = 'none';
-    document.querySelector('.result').style.display = 'block';
-
-    document.getElementById('scoreText').innerText = currentScore;
-    const highScoreKey = `mathfun_highscore_${configKey}`;
-    const prevHigh = parseInt(localStorage.getItem(highScoreKey)) || 0;
-
-    if (currentScore > prevHigh) {
-      localStorage.setItem(highScoreKey, currentScore);
-    }
-
-    document.getElementById('highScoreText').innerText = Math.max(currentScore, prevHigh);
-  }
-</script>
-
+        updateHighScoreDisplay();
+    </script>
 </body>
 </html>
